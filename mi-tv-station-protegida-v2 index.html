@@ -349,28 +349,31 @@
     }
 
     function reproducirYouTube(playerIndex, url) {
-      const embedUrl = convertirAEmbed(url);
-      if (!embedUrl) {
-        alert("URL de YouTube no válida");
-        return;
-      }
+  const embedUrl = convertirAEmbed(url);
+  if (!embedUrl) {
+    alert("URL de YouTube no válida");
+    return;
+  }
 
-      const container = document.querySelector(`.player-container[data-index="${playerIndex}"]`);
-      container.innerHTML = '';
-      
-      const iframe = document.createElement('iframe');
-      iframe.src = embedUrl;
-      iframe.width = "100%";
-      iframe.height = "100%";
-      iframe.style.minHeight = "200px";
-      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-      iframe.allowFullscreen = true;
-      iframe.frameBorder = "0";
-      
-      container.appendChild(iframe);
-      players[playerIndex].iframe = iframe;
-      players[playerIndex].src = url; // Guardar URL original
-    }
+  const container = document.querySelector(`.player-container[data-index="${playerIndex}"]`);
+  
+  // Si ya hay iframe, lo reemplazamos; si no, lo creamos
+  let iframe = container.querySelector('iframe.youtube-player');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.className = 'youtube-player';
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    iframe.allowFullscreen = true;
+    iframe.frameBorder = "0";
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    container.prepend(iframe); // Insertar antes del dropdown
+  }
+
+  iframe.src = embedUrl;
+  players[playerIndex].iframe = iframe;
+  players[playerIndex].src = url; // Guardar URL original
+}
 
     async function buscarVideosEnYouTube(query) {
       try {
@@ -388,45 +391,92 @@
     }
 
     async function reproducirDesdeBusqueda(playerIndex) {
-      const query = prompt("¿Qué video deseas buscar en YouTube?");
-      if (!query) return;
+    const query = prompt("🔍 ¿Qué video deseas buscar en YouTube?");
+    if (!query) return;
 
-      try {
-        const videos = await buscarVideosEnYouTube(query);
-        if (videos.length === 0) {
-          alert("No se encontraron videos");
-          return;
-        }
+    try {
+      const videos = await buscarVideosEnYouTube(query);
+      if (videos.length === 0) {
+        alert("No se encontraron videos.");
+        return;
+      }
 
-        // Mostrar lista de resultados para seleccionar
-        const opciones = videos.map((v, i) => 
-          `${i + 1}. ${v.snippet.title}`).join('\n');
-        
-        const seleccion = parseInt(prompt(
-          `Selecciona un video:\n${opciones}\n\nIngresa el número (1-${videos.length})`));
-        
-        if (isNaN(seleccion) || seleccion < 1 || seleccion > videos.length) {
-          return;
-        }
+      const container = document.querySelector(`.player-container[data-index="${playerIndex}"]`);
 
-        const videoSeleccionado = videos[seleccion - 1];
-        const videoUrl = `https://www.youtube.com/watch?v=${videoSeleccionado.id.videoId}`;
-        
+      // Crear o reutilizar contenedor de selección
+      let dropdownWrapper = container.querySelector('.dropdown-wrapper');
+      if (!dropdownWrapper) {
+        dropdownWrapper = document.createElement('div');
+        dropdownWrapper.className = 'dropdown-wrapper';
+        dropdownWrapper.style.marginTop = '8px';
+        container.appendChild(dropdownWrapper);
+      }
+      dropdownWrapper.innerHTML = ''; // Limpiar selección anterior
+
+      // Crear menú desplegable
+      const dropdown = document.createElement('select');
+      dropdown.style.width = '100%';
+      dropdown.style.marginBottom = '8px';
+      dropdown.style.background = '#222';
+      dropdown.style.color = '#fff';
+      dropdown.style.border = '1px solid #555';
+      dropdown.style.padding = '6px';
+
+      const defaultOption = document.createElement('option');
+      defaultOption.textContent = "⬇️ Selecciona un video para reproducir";
+      defaultOption.disabled = true;
+      defaultOption.selected = true;
+      dropdown.appendChild(defaultOption);
+
+      videos.forEach(v => {
+        const option = document.createElement('option');
+        option.value = v.id.videoId;
+        option.textContent = v.snippet.title;
+        dropdown.appendChild(option);
+      });
+
+      dropdown.addEventListener('change', function () {
+        const selectedId = this.value;
+        const videoUrl = `https://www.youtube.com/watch?v=${selectedId}`;
         reproducirYouTube(playerIndex, videoUrl);
-        
-        if (confirm("¿Agregar a favoritos?")) {
+
+        const selectedVideo = videos.find(v => v.id.videoId === selectedId);
+        if (selectedVideo && confirm("¿Agregar a favoritos?")) {
           favoritos.push({
-            name: videoSeleccionado.snippet.title,
+            name: selectedVideo.snippet.title,
             url: videoUrl
           });
           localStorage.setItem("favoritos", JSON.stringify(favoritos));
-          alert("✅ Video agregado a favoritos");
+          alert("✅ Video agregado a favoritos.");
         }
-      } catch (error) {
-        console.error("Error:", error);
-        alert("Error al buscar videos");
-      }
+      });
+
+      dropdownWrapper.appendChild(dropdown);
+
+      // Botón de nueva búsqueda
+      const newSearchBtn = document.createElement('button');
+      newSearchBtn.textContent = "🔄 Nueva Búsqueda YouTube";
+      newSearchBtn.style.marginTop = '5px';
+      newSearchBtn.style.background = "#444";
+      newSearchBtn.style.color = "#fff";
+      newSearchBtn.style.border = "none";
+      newSearchBtn.style.padding = "0.4rem 0.6rem";
+      newSearchBtn.style.cursor = "pointer";
+
+      newSearchBtn.onclick = () => {
+        dropdownWrapper.innerHTML = '';
+        reproducirDesdeBusqueda(playerIndex);
+      };
+
+      dropdownWrapper.appendChild(newSearchBtn);
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Ocurrió un error al buscar videos.");
     }
+  }
+
+
+
 
     // Funciones para favoritos
     function agregarAFavoritos(playerIndex) {
@@ -612,6 +662,7 @@
         player.iframe = null;
       });
     };
+    
   </script>
 </body>
 </html>
