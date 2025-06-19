@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi TV Station</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5em;
+      background: linear-gradient(90deg, #00fff0, #ff00f0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px #00fff0aa;
+      margin-bottom: 20px;
+    }
+
+    select, input, button, textarea {
+      font-size: 16px;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      box-shadow: 0 0 5px rgba(255,255,255,0.2);
+      display: block;
+      width: 100%;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    video {
+      display: block;
+      margin: 20px auto;
+      border-radius: 12px;
+      box-shadow: 0 0 25px #00ffc3aa;
+      width: 80%;
+      max-width: 720px;
+    }
+
+    .tv-floating {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      background: #000;
+      border: 2px solid #00ffc3aa;
+      border-radius: 12px;
+      box-shadow: 0 0 25px #00ffc3aa;
+      width: 300px;
+    }
+
+    .tv-floating video {
+      width: 100%;
+      border-radius: 12px;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      margin-left: 10px;
+      font-weight: bold;
+    }
+
+    .status-live {
+      color: #00ff00;
+    }
+
+    .status-off {
+      color: #ff4444;
+    }
+
+    button {
+      background: linear-gradient(90deg, #00c3ff, #ff3cac);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    .channel-edit {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px auto;
+      max-width: 800px;
+    }
+
+    .channel-edit img {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    #channelEditorWrapper {
+      margin-top: 30px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>📺 Mi TV Station</h1>
+
+  <div class="tv-floating">
+    <video id="videoPlayer" controls autoplay></video>
+  </div>
+
+  <input id="searchBox" placeholder="Buscar por nombre o categoría..." />
+  <select id="channelDropdown" multiple size="10"></select>
+  <button onclick="startRandomPreviewLoop()">▶️ Reproducir selección aleatoria</button>
+
+  <input type="file" accept=".json," id="playlistFile" />
+
+  <h3>Guardar Playlist Personalizada</h3>
+  <input id="playlistName" placeholder="Nombre de la playlist" />
+  <button onclick="savePlaylist()">💾 Guardar</button>
+
+  <h3 style="margin-top: 20px;">Playlists Guardadas</h3>
+  <select id="savedPlaylists" onchange="loadSavedPlaylist(this.value)">
+    <option value="">Selecciona una lista...</option>
+  </select>
+  <button onclick="deleteSelectedPlaylist()">🗑️ Eliminar Playlist</button>
+  <button onclick="exportPlaylist()">⬇️ Exportar Playlist</button>
+
+  <div id="channelEditorWrapper">
+    <button id="toggleEditorBtn" onclick="toggleEditor()">🎛️ Mostrar Editor de Canales</button>
+    <div id="channelEditor" style="display:none;"></div>
+  </div>
+
+  <script>
+    let playlist = [...Array(1000)].map((_, i) => ({
+      name: `Canal ${i + 1}`,
+      url: `https://vod.mycamtv.net/${i + 1}.m3u8,`,
+      logo: '',
+      category: 'Sin categoría'
+    }));
+
+    let previewTimer;
+    const video = document.getElementById('videoPlayer');
+    const dropdown = document.getElementById('channelDropdown');
+    const fileInput = document.getElementById('playlistFile');
+    const savedPlaylistsDropdown = document.getElementById('savedPlaylists');
+
+    fileInput.addEventListener('change', handleFileLoad);
+
+    function handleFileLoad(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const loaded = JSON.parse(e.target.result);
+          if (!Array.isArray(loaded)) throw new Error('Formato incorrecto');
+          playlist = loaded;
+          populateDropdown();
+          markStreamStatus(dropdown);
+        } catch (error) {
+          alert('Error al cargar el playlist. Asegúrate de que el archivo contiene un array de canales con name y url.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function checkStreamStatus(url) {
+      return new Promise((resolve) => {
+        const testVideo = document.createElement('video');
+        testVideo.src = url;
+        testVideo.muted = true;
+        testVideo.play().then(() => {
+          testVideo.pause();
+          resolve(true);
+        }).catch(() => resolve(false));
+      });
+    }
+
+    async function markStreamStatus(dropdown) {
+      const options = dropdown.options;
+      for (let i = 0; i < options.length; i++) {
+        const channel = playlist.find(c => c.url === options[i].value);
+        if (channel) {
+          const isLive = await checkStreamStatus(channel.url);
+          const label = options[i].text.replace(/\s\(Live\)|\s\(Not connected\)/g, '');
+          options[i].text = `${label} (${isLive ? 'Live' : 'Not connected'})`;
+          options[i].style.color = isLive ? '#00ff00' : '#ff4444';
+        }
+      }
+    }
+
+    function playFromMiddle(url) {
+      video.src = url;
+      video.load();
+      video.addEventListener('loadedmetadata', function handler() {
+        video.removeEventListener('loadedmetadata', handler);
+        if (!isNaN(video.duration) && video.duration > 0) {
+          video.currentTime = video.duration / 2;
+          video.play();
+          previewTimer = setTimeout(() => playNextRandomPreview(), 2 * 60 * 1000);
+        } else {
+          video.play();
+        }
+      });
+    }
+
+    function playNextRandomPreview() {
+      const selected = Array.from(dropdown.selectedOptions);
+      if (selected.length === 0) return;
+      const random = selected[Math.floor(Math.random() * selected.length)];
+      playFromMiddle(random.value);
+    }
+
+    function startRandomPreviewLoop() {
+      clearTimeout(previewTimer);
+      playNextRandomPreview();
+    }
+
+    function savePlaylist() {
+      const name = document.getElementById('playlistName').value.trim();
+      if (!name) return alert('Escribe un nombre para la playlist');
+      const selectedOptions = Array.from(dropdown.selectedOptions);
+      if (selectedOptions.length === 0) return alert('Selecciona al menos un canal');
+      const saved = selectedOptions.map(opt => ({
+        name: opt.text.replace(/\s\(Live\)|\s\(Not connected\)/g, ''),
+        url: opt.value
+      }));
+      localStorage.setItem(`playlist_${name}`, JSON.stringify(saved));
+      loadAllPlaylists();
+    }
+
+    function loadSavedPlaylist(name) {
+      if (!name) return;
+      const saved = localStorage.getItem(`playlist_${name}`);
+      if (saved) {
+        try {
+          playlist = JSON.parse(saved);
+          populateDropdown();
+          markStreamStatus(dropdown);
+        } catch (error) {
+          alert('Error al cargar la lista guardada.');
+        }
+      }
+    }
+
+    function loadAllPlaylists() {
+      savedPlaylistsDropdown.innerHTML = '<option value="">Selecciona una lista...</option>';
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('playlist_')) {
+          const name = key.replace('playlist_', '');
+          const option = document.createElement('option');
+          option.value = name;
+          option.text = name;
+          savedPlaylistsDropdown.appendChild(option);
+        }
+      });
+    }
+
+    function deleteSelectedPlaylist() {
+      const name = savedPlaylistsDropdown.value;
+      if (!name) return;
+      if (confirm(`¿Eliminar la playlist "${name}"?`)) {
+        localStorage.removeItem(`playlist_${name}`);
+        loadAllPlaylists();
+      }
+    }
+
+    function exportPlaylist() {
+      const dataStr = JSON.stringify(playlist, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'playlist.json';
+      a.click();
+    }
+
+    function toggleEditor() {
+      const editor = document.getElementById('channelEditor');
+      editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
+      if (editor.style.display === 'block') {
+        renderChannelEditor();
+      }
+    }
+
+    function renderChannelEditor() {
+      const editor = document.getElementById('channelEditor');
+      editor.innerHTML = '';
+      playlist.forEach((channel, index) => {
+        const row = document.createElement('div');
+        row.className = 'channel-edit';
+        row.innerHTML = `
+          <input type="text" value="${channel.name}" onchange="updateChannel(${index}, 'name', this.value)">
+          <input type="text" value="${channel.url}" onchange="updateChannel(${index}, 'url', this.value)">
+          <input type="text" value="${channel.category}" onchange="updateChannel(${index}, 'category', this.value)">
+        `;
+        editor.appendChild(row);
+      });
+    }
+
+    function updateChannel(index, key, value) {
+      playlist[index][key] = value;
+      populateDropdown();
+      markStreamStatus(dropdown);
+    }
+
+    function populateDropdown() {
+      dropdown.innerHTML = '';
+      playlist.forEach(channel => {
+        const option = document.createElement('option');
+        option.value = channel.url;
+        option.text = channel.name;
+        dropdown.appendChild(option);
+      });
+      if (playlist.length > 0) {
+        dropdown.value = playlist[0].url;
+        video.src = playlist[0].url;
+        video.play();
+      }
+    }
+
+    populateDropdown();
+    loadAllPlaylists();
+    markStreamStatus(dropdown);
+  </script>
+</body>
+</html>
+
