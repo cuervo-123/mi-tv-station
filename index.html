@@ -680,7 +680,7 @@ function regenerarCanalesInternos() {
   const confirmacion = confirm('¿Estás seguro que deseas borrar y regenerar los 1000 canales internos?');
   if (!confirmacion) return;
 
-  const generatedChannels = [...Array(1000)].map((_, i) => ({
+  const generatedChannels = [...Array(14000)].map((_, i) => ({
     name: `Canal ${i + 1}`,
     title: `VOD Canal ${i + 1}`,
     url: `https://vod.mycamtv.net/${i + 1}.m3u8`,
