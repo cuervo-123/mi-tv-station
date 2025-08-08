@@ -11,12 +11,12 @@
   100% { transform: scale(1); opacity: 0.9; }
 }
      body {
-      background: #e0e0e0;
+      background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
       color: #e0e0e0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       display: flex;
-      justify-content: right;
+      justify-content: center;
       padding-top: 60px;
     }
 
@@ -32,7 +32,7 @@
       justify-content: center;
       align-items: center;
       font-size: 2.5rem;
-      color: #758399;
+      color: #00ffd5;
       font-weight: bold;
       text-shadow: 0 0 10px #00ffd5;
       margin-bottom: 40px;
@@ -57,11 +57,11 @@
       left: -250px;
       width: 250px;
       height: 100%;
-      background: #d6d7dc;
+      background: #191919;
       transition: left 0.3s ease-in-out;
       z-index: 1000;
       padding: 20px 15px;
-      border-right: 2px solid #d6d7dc;
+      border-right: 2px solid #00ffd5;
       box-shadow: 4px 0 15px rgba(0, 255, 213, 0.2);
       overflow-y: auto;
     }
@@ -72,26 +72,26 @@
 
     .menu-item {
       display: inline-flex;
-      color: #000000;
+      color: #206d60;
       padding: 12px 15px;
       font-size: 18px;
       border-radius: 8px;
       margin-bottom: 10px;
-      background: #d7e9f2;
+      background: #2a2a2a;
       border: none;
       cursor: pointer;
       transition: background 0.3s;
     }
 
     .menu-item:hover {
-      background: none;
+      background: #00ffd5;
       color: #000;
     }
 
     .submenu {
       display: none;
       padding-left: 15px;
-      background: #d7e9f2;
+      background: #1a1a1a;
       margin-bottom: 15px;
       border-left: 3px solid #00ffd5;
       border-radius: 4px;
@@ -107,7 +107,7 @@
     }
 
     .submenu-button:hover {
-      color: none;
+      color: #00ffd5;
     }
 
     #openMenuBtn {
@@ -117,7 +117,7 @@
       font-size: 28px;
       cursor: pointer;
       z-index: 1100;
-      color: #3a4e6e;
+      color: #00ffd5;
     }
 
     #favorites-slider {
@@ -332,7 +332,7 @@
     </div>
     
     <div>
-    <h3>Favorites</h3>
+    <h3>Categorías Detectadas:</h3>
     <div id="category-list"></div>
     </div>
     
@@ -680,7 +680,7 @@ function regenerarCanalesInternos() {
   const confirmacion = confirm('¿Estás seguro que deseas borrar y regenerar los 1000 canales internos?');
   if (!confirmacion) return;
 
-  const generatedChannels = [...Array(14000)].map((_, i) => ({
+  const generatedChannels = [...Array(1000)].map((_, i) => ({
     name: `Canal ${i + 1}`,
     title: `VOD Canal ${i + 1}`,
     url: `https://vod.mycamtv.net/${i + 1}.m3u8`,
