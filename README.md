@@ -17,10 +17,9 @@ Funciona con archivos de listas `.m3u` y `.json`,
 ## 🚀 Cómo usarlo
 
 1. Abre la app desde [GitHub Pages](https://cuervo-123.github.io/mi-tv-station/)
-2. Carga tu lista personalizada `.m3u` o `.json`, o usa los canales precargados
-3. Haz clic en "Player 1" o "Player 2" para ver el canal
-4. Busca canales con el buscador
-5. Sistema de favoritos personalizable Guarda tus canales preferidos con un solo clic y accede a ellos desde el panel dedicado.
+2. Carga tu lista personalizada `.m3u` o `.json`, 
+3. Busca canales con el buscador
+4. Sistema de favoritos personalizable Guarda tus canales preferidos con un solo clic y accede a ellos desde el panel dedicado.
 ---
 
 ## 📁 Formato compatible `.json`.m3u
