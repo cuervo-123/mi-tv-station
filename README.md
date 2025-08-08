@@ -1,14 +1,14 @@
 # 📺 Mi TV Station Dual
 
 **Mi TV Station ** es una app web de televisión que permite reproducir  canales De tv.  
-Funciona con archivos de listas `.m3u` y `.json`,
+Funciona con archivos de listas `.m3u` 
 
 ---
 
 ## 🛠️ Características principales
 
 - 🔁 Soporte para reproducir tv 
-- 📂 Cargador de archivos `.m3u` y `.json`
+- 📂 Cargador de archivos `.m3u`
 - 🔍 Buscador por nombre de canal
 - 💾 Guardado automático de lista en `localStorage`
 
@@ -24,17 +24,8 @@ Funciona con archivos de listas `.m3u` y `.json`,
 
 ## 📁 Formato compatible `.json`.m3u
 
-```json
-[
-  {
-    "name": "Canal Demo",
-    "url": "https://ejemplo.com/canal.m3u"
-  },
-  {
-    "name": "TV Pública",
-    "url": "https://otro.com/stream.m3u"
-  }
-]
+```m3u
+
 ## 🧩 Ideas futuras
 
 
